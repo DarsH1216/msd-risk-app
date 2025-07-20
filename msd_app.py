@@ -16,8 +16,8 @@ with st.expander("🗂 Debug Info"):
 # 📘 REBA & QEC Explanation
 with st.expander("ℹ What are REBA and QEC?"):
     st.markdown("""
-    - *REBA (Rapid Entire Body Assessment)*: Assesses physical stress from postures involving the neck, trunk, and limbs.
-    - *QEC (Quick Exposure Check)*: Evaluates risk based on posture, repetition, force, vibration, and work stress.
+    - *REBA (Rapid Entire Body Assessment)*: Assesses posture-related risks involving neck, trunk, arms, and legs during tasks.
+    - *QEC (Quick Exposure Check)*: Evaluates posture, repetition, force, vibration, and work-related stress.
     """)
 
 # 📦 Load the trained model
@@ -82,21 +82,25 @@ if st.button("🔍 Predict MSD Risk"):
     risk_label = label_map[prediction]
     st.success(f"🎯 Predicted MSD Risk Level: *{risk_label}*")
 
-    # 📊 Risk Level Bar Chart
+    # 📊 MSD Risk Bar Chart
     st.subheader("📊 MSD Risk Prediction Chart")
     chart_df = pd.DataFrame({
         "Risk Level": list(label_map.values()),
-        "Score": [1 if label == risk_label else 0 for label in label_map.values()]
+        "Predicted": [1 if i == prediction else 0 for i in range(len(label_map))]
     })
     st.bar_chart(chart_df.set_index("Risk Level"))
 
-    # 📍 Pain Area Chart
+    # 📍 Pain Area Chart (Only show selected pain areas)
     st.subheader("📍 Reported Pain Areas")
-    pain_df = pd.DataFrame({
-        "Body Part": list(pain_areas.keys()),
-        "Pain Reported": [int(val) for val in pain_areas.values()]
-    })
-    st.bar_chart(pain_df.set_index("Body Part"))
+    selected_pain = {k: v for k, v in pain_areas.items() if v}
+    if selected_pain:
+        pain_df = pd.DataFrame({
+            "Body Part": list(selected_pain.keys()),
+            "Pain Reported": [1] * len(selected_pain)
+        })
+        st.bar_chart(pain_df.set_index("Body Part"))
+    else:
+        st.info("No pain areas selected.")
 
     # 📉 REBA vs QEC Chart
     st.subheader("🧮 REBA vs QEC Comparison")
@@ -105,7 +109,7 @@ if st.button("🔍 Predict MSD Risk"):
     ax.set_ylabel("Score")
     st.pyplot(fig)
 
-    # 📄 PDF Generation
+    # 📄 PDF Report
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=14)
@@ -121,9 +125,11 @@ if st.button("🔍 Predict MSD Risk"):
     pdf.cell(200, 10, txt=f"Predicted Risk Level: {risk_label}", ln=1)
     pdf.ln(5)
     pdf.cell(200, 10, txt="Reported Pain Areas:", ln=1)
-    for area, val in pain_areas.items():
-        if val:
+    if selected_pain:
+        for area in selected_pain:
             pdf.cell(200, 10, txt=f"- {area}", ln=1)
+    else:
+        pdf.cell(200, 10, txt="None reported", ln=1)
 
     pdf.output("report.pdf")
     with open("report.pdf", "rb") as f:
