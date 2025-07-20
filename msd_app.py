@@ -5,13 +5,14 @@ import os
 from fpdf import FPDF
 import base64
 
-st.title("🦴 MSD Risk Predictor with PDF Report")
+st.set_page_config(page_title="MSD Risk Predictor", layout="centered")
+st.title("🦴 MSD Risk Predictor with PDF Report and Chart")
 
-# 🔍 DEBUG: Show files in the working directory
+# 🔍 Debug Info
 st.subheader("🗂 Debug Info")
 st.write("Files in app directory:", os.listdir("."))
 
-# 🔁 Model loading
+# Load the model
 model_path = "msd_risk_predictor.pkl"
 
 if not os.path.exists(model_path):
@@ -21,7 +22,7 @@ else:
     model = joblib.load(model_path)
     st.success("✅ Model loaded successfully!")
 
-# Input form
+# 🧾 Input Form
 st.header("📋 Enter Worker Details")
 
 age = st.number_input("Age", 18, 60)
@@ -52,13 +53,20 @@ data = pd.DataFrame([{
 
 label_map = {0: 'Low', 1: 'Medium', 2: 'High', 3: 'Very High'}
 
-# Predict & show result
+# 🔍 Predict and Show Result
 if st.button("🔍 Predict MSD Risk"):
     prediction = model.predict(data)[0]
     risk_level = label_map[prediction]
     st.success(f"🎯 Predicted MSD Risk Level: *{risk_level}*")
 
-    # Generate PDF report
+    # 📊 Bar Chart
+    chart_data = pd.DataFrame({
+        "Risk Level": list(label_map.values()),
+        "Score": [1 if label == risk_level else 0 for label in label_map.values()]
+    })
+    st.bar_chart(chart_data.set_index("Risk Level"))
+
+    # 📄 Generate PDF
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=14)
@@ -71,9 +79,9 @@ if st.button("🔍 Predict MSD Risk"):
     pdf.cell(200, 10, txt=f"QEC Total Score: {qec}", ln=1)
     pdf.cell(200, 10, txt=f"Predicted Risk Level: {risk_level}", ln=1)
 
-    # Save in memory
+    # Save and show download
     pdf.output("report.pdf")
     with open("report.pdf", "rb") as f:
         base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-        href = f'<a href="data:application/octet-stream;base64,{base64_pdf}" download="MSD_Report.pdf">📄 Download Report</a>'
+        href = f'<a href="data:application/octet-stream;base64,{base64_pdf}" download="MSD_Report.pdf">📄 Download PDF Report</a>'
         st.markdown(href, unsafe_allow_html=True)
