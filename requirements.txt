@@ -1,6 +1,9 @@
 streamlit
 pandas
 joblib
-matplotlib
-openpyxl
 fpdf
+scikit-learn
+openpyxl
+matplotlib
+
+
